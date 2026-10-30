@@ -20,6 +20,7 @@ import { TicketsServiceError, type TicketsService } from "@nexo/tickets-service"
 import { z } from "zod";
 import { formatDateTime, formatRelative } from "../lib/format.js";
 import type { AgentSession, NexoRequestContext, PendingAction } from "./session.js";
+import { toTicketView } from "./widgets.js";
 
 // ---------- apoio ----------
 
@@ -119,9 +120,14 @@ export function createNexoTools(tickets: TicketsService) {
     }),
     execute: async ({ status }, ctx) => {
       const session = sessionOf(ctx);
-      return attempt(async () => ({
-        tickets: (await tickets.listTickets(session.employee.id, status)).map((t) => describeTicket(t, session.now())),
-      }));
+      return attempt(async () => {
+        const list = await tickets.listTickets(session.employee.id, status);
+        session.widgets.push({
+          source: "list",
+          widget: { type: "ticket_list", tickets: list.map((t) => toTicketView(t, session.now())) },
+        });
+        return { tickets: list.map((t) => describeTicket(t, session.now())) };
+      });
     },
   });
 
@@ -133,6 +139,7 @@ export function createNexoTools(tickets: TicketsService) {
       const session = sessionOf(ctx);
       return attempt(async () => {
         const ticket = await tickets.getTicket(session.employee.id, ticketId.trim().toUpperCase());
+        session.widgets.push({ source: "ticket", widget: { type: "ticket_card", ticket: toTicketView(ticket, session.now()) } });
         return {
           ticket: describeTicket(ticket, session.now()),
           history: ticket.history.map((h) => ({
@@ -163,6 +170,10 @@ export function createNexoTools(tickets: TicketsService) {
         if (!ignoreDuplicates) {
           const duplicates = await tickets.findPossibleDuplicates(session.employee.id, draft);
           if (duplicates.length > 0) {
+            session.widgets.push({
+              source: "duplicates",
+              widget: { type: "ticket_list", tickets: duplicates.map((t) => toTicketView(t, session.now())) },
+            });
             return {
               created: false,
               possibleDuplicates: duplicates.map((t) => describeTicket(t, session.now())),
@@ -177,6 +188,14 @@ export function createNexoTools(tickets: TicketsService) {
           proposedAtTurn: session.turn,
         };
         session.pendingAction = pending;
+        const firstResponseBy = slaDeadline(draft.priority, session.now());
+        session.widgets.push({
+          source: "draft",
+          widget: {
+            type: "draft",
+            draft: { draftId: pending.id, kind: "create", ...draft, firstResponseBy: firstResponseBy.toISOString() },
+          },
+        });
         return {
           created: false,
           draftId: pending.id,
@@ -187,7 +206,7 @@ export function createNexoTools(tickets: TicketsService) {
             category: CATEGORY_LABEL[draft.category],
             priority: PRIORITY_RULES[draft.priority].label,
             affected: AFFECTED_LABEL[draft.affected],
-            firstResponseBy: formatDateTime(slaDeadline(draft.priority, session.now())),
+            firstResponseBy: formatDateTime(firstResponseBy),
           },
           priorityReason,
           nextStep: `Mostre o rascunho e pergunte se pode criar. Quando o funcionário confirmar, chame confirm_pending_action com draftId ${pending.id}, sem montar outro rascunho.`,
@@ -218,6 +237,10 @@ export function createNexoTools(tickets: TicketsService) {
           kind === "comment"
             ? { kind, id, ticketId: ticket.id, text, proposedAtTurn: session.turn }
             : { kind, id, ticketId: ticket.id, reason: text, proposedAtTurn: session.turn };
+        session.widgets.push({
+          source: "draft",
+          widget: { type: "draft", draft: { draftId: id, kind, ticketId: ticket.id, title: ticket.title, description: text } },
+        });
         return {
           created: false,
           draftId: id,
@@ -254,6 +277,8 @@ export function createNexoTools(tickets: TicketsService) {
               ? await tickets.addComment(id, pending.ticketId, pending.text)
               : await tickets.reopenTicket(id, pending.ticketId, pending.reason);
         session.pendingAction = null;
+        const note = pending.kind === "create" ? "Chamado criado" : pending.kind === "reopen" ? "Chamado reaberto" : "Informação adicionada";
+        session.widgets.push({ source: "done", widget: { type: "ticket_card", ticket: toTicketView(ticket, session.now()), note } });
         return { done: pending.kind, ticket: describeTicket(ticket, session.now()) };
       });
     },

@@ -34,6 +34,11 @@ export const Decision = z.object({
   action: z.string().describe("O que você decidiu fazer agora"),
   confidence: z.number().min(0).max(1).describe("0 a 1: quão seguro você está da interpretação e da ação"),
   reason: z.string().describe("Por quê: a regra do service desk ou a informação que levou a essa ação"),
+  options: z
+    .array(z.string().max(40))
+    .max(4)
+    .optional()
+    .describe("Opções curtas que o funcionário pode tocar para responder a sua pergunta (ex.: Só eu, Minha equipe)"),
 });
 export type Decision = z.infer<typeof Decision>;
 

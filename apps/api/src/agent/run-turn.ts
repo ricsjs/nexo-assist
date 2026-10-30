@@ -1,8 +1,9 @@
 import { RequestContext } from "@mastra/core/request-context";
-import type { TraceStep, TurnTrace } from "@nexo/domain";
+import type { TraceStep, TurnTrace, Widget } from "@nexo/domain";
 import { MAX_STEPS_PER_MESSAGE, type NexoAgent } from "./nexo-agent.js";
 import type { AgentSession, NexoRequestContext } from "./session.js";
 import { describeToolCall } from "./trace.js";
+import { selectWidgets } from "./widgets.js";
 
 type StreamOutput = Awaited<ReturnType<NexoAgent["stream"]>>;
 type ResponseMessage = NonNullable<Awaited<StreamOutput["response"]>["messages"]>[number];
@@ -51,7 +52,7 @@ export class ModelCallError extends Error {
 export const TURN_TIMEOUT_MS = 60_000;
 
 export type TurnResult =
-  | { status: "answered"; text: string; trace: TurnTrace }
+  | { status: "answered"; text: string; trace: TurnTrace; widgets: Widget[]; newMessages: ChatMessage[] }
   // Conversa com analista: o agent não responde (Anexo A, "Transferência").
   | { status: "paused" };
 
@@ -73,6 +74,7 @@ export async function runTurn({ agent, model, session, history, text, onEvent = 
   const turnStart = history.length;
   session.turn++;
   session.decision = null;
+  session.widgets = [];
   const startedAt = Date.now();
   const steps: TraceStep[] = [];
   history.push({ role: "user", content: text });
@@ -109,7 +111,8 @@ export async function runTurn({ agent, model, session, history, text, onEvent = 
       }
     }
     if (answer.trim() === "") throw new ModelCallError("empty_answer", finish);
-    history.push(...((await result.response).messages ?? [{ role: "assistant", content: answer }]));
+    const newMessages: ChatMessage[] = (await result.response).messages ?? [{ role: "assistant", content: answer }];
+    history.push(...newMessages);
     const usage = await result.totalUsage;
     const trace: TurnTrace = {
       turn: session.turn,
@@ -119,7 +122,7 @@ export async function runTurn({ agent, model, session, history, text, onEvent = 
       durationMs: Date.now() - startedAt,
       tokens: usage ? { input: usage.inputTokens ?? 0, output: usage.outputTokens ?? 0 } : null,
     };
-    return { status: "answered", text: answer, trace };
+    return { status: "answered", text: answer, trace, widgets: selectWidgets(session.widgets, session.decision), newMessages };
   } catch (error) {
     // Desfaz a mensagem para o funcionário poder reenviar sem bagunçar o histórico.
     history.length = turnStart;

@@ -14,6 +14,12 @@ importers:
 
   apps/api:
     dependencies:
+      '@hono/node-server':
+        specifier: ^2.1.5
+        version: 2.1.5(hono@4.13.14)
+      '@libsql/client':
+        specifier: ^0.18.0
+        version: 0.18.0
       '@mastra/core':
         specifier: ^1.80.0
         version: 1.80.0(zod@4.6.7)
@@ -23,6 +29,12 @@ importers:
       '@nexo/tickets-service':
         specifier: workspace:*
         version: link:../../packages/tickets-service
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@libsql/client@0.18.0)
+      hono:
+        specifier: ^4.13.14
+        version: 4.13.14
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -30,6 +42,9 @@ importers:
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
+      drizzle-kit:
+        specifier: ^0.31.11
+        version: 0.31.11
       tsx:
         specifier: ^4.20.0
         version: 4.23.15
@@ -592,6 +607,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@hono/node-server@2.1.5':
+    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      hono: ^4 || ^5.0.0-0
 
   '@hono/standard-validator@0.4.1':
     resolution: {integrity: sha512-Q0+1dgMKAXEvsmJ5FNoamwnfrf/I5JNnKn7WzfynH8nJlNe1lNOW1+vlKpEQZbrBLEgmxIeys6HjRotDvZzq+A==}
@@ -2029,6 +2050,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@hono/node-server@2.1.5(hono@4.13.14)':
+    dependencies:
+      hono: 4.13.14
 
   '@hono/standard-validator@0.4.1(@standard-schema/spec@1.1.0)(hono@4.13.14)':
     dependencies:
