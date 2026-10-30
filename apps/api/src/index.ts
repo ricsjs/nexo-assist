@@ -1,3 +1,8 @@
-import { listCategories } from "@nexo/tickets-service";
+import { createDb, createTicketsService, migrateDb } from "@nexo/tickets-service";
 
-console.log("Categorias vindas do tickets-service:", listCategories());
+const db = createDb();
+await migrateDb(db);
+const tickets = createTicketsService({ db });
+
+const ana = await tickets.findEmployeeByEmail("ana.souza@nexo.com.br");
+console.log("Chamados abertos da Ana:", (await tickets.listTickets(ana!.id)).map((t) => t.id));
