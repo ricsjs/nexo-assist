@@ -5,9 +5,18 @@
   "type": "module",
   "exports": "./src/index.ts",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:seed": "tsx scripts/seed.ts"
   },
   "dependencies": {
-    "@nexo/domain": "workspace:*"
+    "@libsql/client": "^0.18.0",
+    "@nexo/domain": "workspace:*",
+    "drizzle-orm": "^0.45.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
   }
 }
