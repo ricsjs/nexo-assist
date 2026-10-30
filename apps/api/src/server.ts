@@ -36,8 +36,13 @@ const app = createApp({
   conversations,
   sessionSecret: config.SESSION_SECRET,
   secureCookies: config.NODE_ENV === "production",
+  limits: {
+    messagesPer10Min: config.RATE_LIMIT_MESSAGES_PER_10MIN,
+    dailyMessageCap: config.DAILY_MESSAGE_CAP,
+    loginsPerMinute: config.RATE_LIMIT_LOGINS_PER_MINUTE,
+  },
 });
 
-serve({ fetch: app.fetch, port: config.PORT }, ({ port }) => {
+serve({ fetch: app.fetch, port: config.API_PORT }, ({ port }) => {
   console.log(`Nexo Assist api em http://localhost:${port} · modelo ${config.LLM_MODEL}`);
 });

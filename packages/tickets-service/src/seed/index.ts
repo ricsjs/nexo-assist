@@ -19,3 +19,10 @@ export async function seed(db: Db, now = new Date()): Promise<void> {
     await tx.insert(schema.kbArticles).values(data.kbArticles);
   });
 }
+
+// Primeira execução (ou deploy novo): sem funcionários, cria os dados de exemplo.
+export async function seedIfEmpty(db: Db): Promise<boolean> {
+  if ((await db.$count(schema.employees)) > 0) return false;
+  await seed(db);
+  return true;
+}

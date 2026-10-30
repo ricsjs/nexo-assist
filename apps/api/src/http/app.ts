@@ -6,12 +6,23 @@ import { ModelCallError } from "../agent/run-turn.ts";
 import { toTicketView } from "../agent/widgets.ts";
 import { ConversationError, type ConsoleFilter, type ConversationService } from "../conversations/service.ts";
 import { createAuth, type AuthEnv } from "./auth.ts";
+import { createRateLimiter, DAY, MINUTE } from "./rate-limit.ts";
+
+export interface UsageLimits {
+  // Mensagens ao agent por funcionário a cada 10 minutos.
+  messagesPer10Min: number;
+  // Teto de mensagens ao agent por dia na aplicação inteira: limita o custo do deploy público.
+  dailyMessageCap: number;
+  // Tentativas de login por IP por minuto.
+  loginsPerMinute: number;
+}
 
 export interface AppDeps {
   tickets: TicketsService;
   conversations: ConversationService;
   sessionSecret: string;
   secureCookies: boolean;
+  limits: UsageLimits;
 }
 
 // Mensagens longas não ajudam o agent e encarecem cada chamada ao modelo.
@@ -55,8 +66,15 @@ function friendlyModelError(error: ModelCallError): string {
   }
 }
 
-export function createApp({ tickets, conversations, sessionSecret, secureCookies }: AppDeps) {
+export function createApp({ tickets, conversations, sessionSecret, secureCookies, limits }: AppDeps) {
   const auth = createAuth({ tickets, secret: sessionSecret, secure: secureCookies });
+  const loginLimit = createRateLimiter({ limit: limits.loginsPerMinute, windowMs: MINUTE });
+  const messageLimit = createRateLimiter({ limit: limits.messagesPer10Min, windowMs: 10 * MINUTE });
+  const dailyCap = createRateLimiter({ limit: limits.dailyMessageCap, windowMs: DAY });
+  const tooMany = (c: Context, retryAfterMs: number, message: string) => {
+    c.header("Retry-After", String(Math.ceil(retryAfterMs / 1000)));
+    return c.json({ error: "rate_limited", message }, 429);
+  };
   const app = new Hono<AuthEnv>().basePath("/api");
 
   app.onError((error, c) => errorResponse(c, error));
@@ -65,6 +83,9 @@ export function createApp({ tickets, conversations, sessionSecret, secureCookies
   // ---------- autenticação ----------
 
   app.post("/auth/login", async (c) => {
+    const ip = c.req.header("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+    const login = loginLimit.hit(ip);
+    if (!login.allowed) return tooMany(c, login.retryAfterMs, "Muitas tentativas de login. Espere um minuto.");
     const body = LoginBody.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "invalid", message: "Informe e-mail e senha." }, 400);
     const user = await auth.login(c, body.data.email, body.data.remember);
@@ -94,6 +115,14 @@ export function createApp({ tickets, conversations, sessionSecret, secureCookies
     const body = TextBody.safeParse(await c.req.json().catch(() => null));
     if (!body.success) return c.json({ error: "invalid", message: `Mensagem vazia ou acima de ${MAX_TEXT} caracteres.` }, 400);
     const employee = c.get("employee");
+    const own = messageLimit.hit(employee.id);
+    if (!own.allowed) {
+      return tooMany(c, own.retryAfterMs, "Você enviou muitas mensagens seguidas. Espere alguns minutos e tente de novo.");
+    }
+    const global = dailyCap.hit("all");
+    if (!global.allowed) {
+      return tooMany(c, global.retryAfterMs, "O assistente atingiu o limite de uso de hoje. Ligue no ramal 4000 se for urgente.");
+    }
 
     return streamSSE(c, async (stream) => {
       try {

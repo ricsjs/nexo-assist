@@ -2,6 +2,7 @@ import {
   createDb,
   createTicketsService,
   migrateDb,
+  seedIfEmpty,
   withSimulatedOutages,
   type TicketsService,
 } from "@nexo/tickets-service";
@@ -19,6 +20,7 @@ export interface TicketsClientOptions {
 export async function createTicketsClient(options: TicketsClientOptions): Promise<TicketsService> {
   const db = createDb();
   await migrateDb(db);
+  if (await seedIfEmpty(db)) console.log("Banco de chamados vazio: dados de exemplo criados.");
   const legacy = withSimulatedOutages(createTicketsService({ db }), {
     outageRate: options.outageRate,
     outageMs: options.outageMs,
