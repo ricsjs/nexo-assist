@@ -54,6 +54,7 @@ export interface ConversationView {
   // Rascunho que ainda aceita Confirmar / Cancelar.
   pendingDraftId: string | null;
   handoff: { reason: HandoffReason; team: string; summary: string; ticketId?: string } | null;
+  analystId: string | null;
   analystName: string | null;
   messages: MessageView[];
 }

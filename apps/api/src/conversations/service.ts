@@ -113,6 +113,7 @@ export function createConversationService({ db, tickets, agent, model, now = () 
       messageLimit: MAX_MESSAGES_PER_SESSION,
       pendingDraftId: row.pendingAction?.id ?? null,
       handoff: row.handoff ? { ...row.handoff, team: `Suporte ${row.handoff.team}` } : null,
+      analystId: row.analystId,
       analystName: analyst?.name ?? null,
       messages: rows.map(toMessageView),
     };
