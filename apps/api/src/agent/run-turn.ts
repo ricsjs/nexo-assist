@@ -14,17 +14,38 @@ export type TurnEvent =
   | { type: "tool-result"; toolName: string; result: unknown }
   | { type: "text"; text: string };
 
-// Falha ao falar com o provedor do LLM. rateLimited separa "espere e tente de novo"
-// (cota do plano, 429) de erros que não melhoram com nova tentativa.
+// Falha ao falar com o provedor do LLM. O tipo separa "espere e tente de novo"
+// (cota do plano, 429) de demora excessiva, resposta vazia e erro do provedor.
+export type ModelFailure = "rate_limited" | "timeout" | "empty_answer" | "provider_error";
+
+const FAILURE_MESSAGE: Record<ModelFailure, string> = {
+  rate_limited: "Limite de uso do modelo atingido.",
+  timeout: "O modelo demorou demais para responder.",
+  empty_answer: "O modelo não devolveu resposta.",
+  provider_error: "Falha ao falar com o modelo.",
+};
+
 export class ModelCallError extends Error {
-  readonly rateLimited: boolean;
-  constructor(override readonly cause: unknown) {
-    const status = (cause as { statusCode?: number } | null)?.statusCode;
-    super(status === 429 ? "Limite de uso do modelo atingido." : "Falha ao falar com o modelo.");
+  constructor(
+    readonly kind: ModelFailure,
+    override readonly cause?: unknown,
+  ) {
+    super(FAILURE_MESSAGE[kind]);
     this.name = "ModelCallError";
-    this.rateLimited = status === 429;
+  }
+
+  get rateLimited(): boolean {
+    return this.kind === "rate_limited";
+  }
+
+  static fromProvider(cause: unknown): ModelCallError {
+    const status = (cause as { statusCode?: number } | null)?.statusCode;
+    return new ModelCallError(status === 429 ? "rate_limited" : "provider_error", cause);
   }
 }
+
+// Tempo máximo de uma mensagem inteira, incluindo as idas e voltas com as ferramentas.
+export const TURN_TIMEOUT_MS = 60_000;
 
 export type TurnResult =
   | { status: "answered"; text: string }
@@ -47,8 +68,11 @@ export async function runTurn(
   history.push({ role: "user", content: text });
   const requestContext = new RequestContext<NexoRequestContext>([["session", session]]);
   try {
-    const result = await agent.stream(history, { requestContext, maxSteps: MAX_STEPS_PER_MESSAGE });
+    // Sem limite, um provedor que não responde deixaria o chat carregando para sempre.
+    const abortSignal = AbortSignal.timeout(TURN_TIMEOUT_MS);
+    const result = await agent.stream(history, { requestContext, maxSteps: MAX_STEPS_PER_MESSAGE, abortSignal });
     let answer = "";
+    let finish: unknown;
     for await (const chunk of result.fullStream) {
       if (chunk.type === "tool-call") {
         onEvent({ type: "tool-call", toolName: chunk.payload.toolName, args: chunk.payload.args });
@@ -58,11 +82,16 @@ export async function runTurn(
         answer += chunk.payload.text;
         onEvent({ type: "text", text: chunk.payload.text });
       } else if (chunk.type === "error") {
-        // O Mastra entrega a falha do provedor como evento, sem lançar: sem isto, a conversa
+        // O Mastra entrega falhas como eventos, sem lançar: sem isto, a conversa
         // seguiria com uma resposta vazia no histórico.
-        throw new ModelCallError(chunk.payload.error);
+        throw ModelCallError.fromProvider(chunk.payload.error);
+      } else if (chunk.type === "abort") {
+        throw new ModelCallError("timeout");
+      } else if (chunk.type === "finish") {
+        finish = chunk.payload.stepResult;
       }
     }
+    if (answer.trim() === "") throw new ModelCallError("empty_answer", finish);
     history.push(...((await result.response).messages ?? [{ role: "assistant", content: answer }]));
     return { status: "answered", text: answer };
   } catch (error) {

@@ -58,11 +58,18 @@ for (const name of names) {
   console.log(`\n=== ${name} ===`);
   for (const text of messages) {
     console.log(`\nfuncionário › ${text}`);
-    const result = await withQuotaWait(() =>
-      runTurn(agent, session, history, text, (event) => {
-        if (event.type === "tool-call") console.log(`  · ${event.toolName} ${JSON.stringify(event.args ?? {})}`);
-      }),
-    );
-    console.log(result.status === "paused" ? "  [agent pausado: conversa com analista]" : `nexo › ${result.text}`);
+    try {
+      const result = await withQuotaWait(() =>
+        runTurn(agent, session, history, text, (event) => {
+          if (event.type === "tool-call") console.log(`  · ${event.toolName} ${JSON.stringify(event.args ?? {})}`);
+        }),
+      );
+      console.log(result.status === "paused" ? "  [agent pausado: conversa com analista]" : `nexo › ${result.text}`);
+    } catch (error) {
+      if (!(error instanceof ModelCallError)) throw error;
+      const reason = (error.cause as { reason?: string; rawReason?: string } | undefined) ?? {};
+      console.log(`  [falhou: ${error.kind}${reason.reason ? ` (${reason.reason} ${reason.rawReason ?? ""})` : ""}]`);
+      break;
+    }
   }
 }
