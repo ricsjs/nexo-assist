@@ -7,7 +7,8 @@
     "chat": "tsx scripts/chat.ts",
     "demo:outages": "tsx scripts/outage-demo.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "scenarios": "tsx scripts/scenarios.ts"
   },
   "dependencies": {
     "@mastra/core": "^1.80.0",
