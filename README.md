@@ -154,18 +154,28 @@ O PRD diz que o sistema de chamados fica indisponível por alguns segundos de ve
 
 ## Deploy
 
-Uma imagem Docker com api e web (`Dockerfile` na raiz). Só o web é exposto; ele repassa `/api` para o api dentro do container. Funciona em Railway, Render, Fly.io ou qualquer plataforma com Docker.
+Publicado no **Render** (plano gratuito) com os bancos no **Turso** (LibSQL gerenciado, plano gratuito).
 
-1. Crie o serviço a partir do repositório (a plataforma detecta o `Dockerfile`).
-2. Monte um **volume em `/app/data`** — é onde ficam os dois bancos SQLite; sem volume, os dados voltam ao exemplo a cada deploy.
-3. Defina as variáveis: `LLM_MODEL`, a chave do provedor (`ANTHROPIC_API_KEY` ou `GOOGLE_GENERATIVE_AI_API_KEY`), `SESSION_SECRET` (32+ caracteres) e, se quiser, os limites de uso.
-4. As chaves ficam só nas variáveis da plataforma. Para controlar custo, além dos limites da aplicação, defina um teto de gasto no console do provedor do modelo.
+Uma imagem Docker com api e web (`Dockerfile` na raiz). Só o web é exposto; ele repassa `/api` para o api dentro do container. Os bancos são LibSQL, então o mesmo código usa um arquivo local em desenvolvimento e um banco remoto em produção — só muda a URL. Isso dispensa disco persistente na plataforma, que o plano gratuito do Render não oferece.
+
+Como foi feito:
+
+1. **Turso:** dois bancos, `nexo-tickets` e `nexo-app` (um por serviço, porque cada um tem a própria tabela de controle de migrations).
+2. **Render:** Web Service a partir do repositório, runtime Docker, health check em `/api/health`. Cada push na `main` gera um novo deploy.
+3. **Variáveis** (só no painel do Render, nunca no repositório): `LLM_MODEL`, a chave do provedor (`GOOGLE_GENERATIVE_AI_API_KEY` ou `ANTHROPIC_API_KEY`), `SESSION_SECRET` (32+ caracteres), `TICKETS_DB_URL` e `APP_DB_URL` no formato `libsql://<banco>.turso.io?authToken=<token>`.
+4. Na primeira subida, as migrations criam as tabelas e os dados de exemplo entram sozinhos.
+
+Proteção de custo: além dos limites da aplicação (mensagens por funcionário, teto diário e tentativas de login), o ideal é definir um teto de gasto no console do provedor do modelo.
+
+**Observação:** no plano gratuito o Render desliga o serviço após ~15 minutos sem acesso; a primeira abertura depois disso leva cerca de 1 minuto.
+
+Em outra plataforma com Docker (Fly.io, Railway…), dá para usar SQLite em arquivo montando um volume em `/app/data`, sem definir `TICKETS_DB_URL` e `APP_DB_URL`.
 
 ---
 
 ## Principais trade-offs
 
-- **SQLite e limites em memória:** simples e suficientes para uma instância. Com várias instâncias, trocaria por Postgres (ou LibSQL remoto — basta mudar as URLs) e limites no Redis.
+- **Uma instância só:** os bancos (LibSQL no Turso) já aguentam várias instâncias, mas os limites de uso e os avisos em tempo real ficam em memória. Para escalar horizontalmente, eles iriam para um Redis.
 - **Avisos em tempo real em memória:** funcionam para uma instância. Com várias instâncias, o aviso precisaria passar por um Redis pub/sub (ou similar) para chegar a quem está conectado em outra instância.
 - **Busca na central por palavras-chave**, sem embeddings: com 8 artigos acerta e não custa nada; não entende sinônimos.
 - **Confiança declarada pelo próprio modelo:** é útil para destacar casos duvidosos, mas não é calibrada.
