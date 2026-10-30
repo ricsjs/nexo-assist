@@ -8,7 +8,8 @@
     "demo:outages": "tsx scripts/outage-demo.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "scenarios": "tsx scripts/scenarios.ts"
+    "scenarios": "tsx scripts/scenarios.ts",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.5",

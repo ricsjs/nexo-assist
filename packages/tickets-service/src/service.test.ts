@@ -167,3 +167,10 @@ describe("duplicidade", () => {
     expect(dups).toEqual([]); // INC-20150 está resolvido: reabrir, não duplicar
   });
 });
+
+describe("analistas", () => {
+  it("encontra analista pelo e-mail", async () => {
+    expect(await service.findAnalystByEmail("Rafael.Lima@nexo.com.br")).toMatchObject({ id: "an-rafael", team: "N2" });
+    expect(await service.findAnalystByEmail("ana.souza@nexo.com.br")).toBeNull();
+  });
+});

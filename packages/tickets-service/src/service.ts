@@ -2,6 +2,7 @@ import {
   canReopen,
   OPEN_STATUSES,
   TicketDraft,
+  type Analyst,
   type Category,
   type Employee,
   type SupportTeam,
@@ -19,7 +20,7 @@ import {
 import { rankArticles, tokenize, type KbMatch } from "./knowledge.js";
 import { toEmployee, toKbArticle, toTicket, toTicketUpdate, type TicketUpdate } from "./mappers.js";
 
-const { tickets, ticketUpdates, employees, kbArticles } = schema;
+const { tickets, ticketUpdates, employees, analysts, kbArticles } = schema;
 
 export type TicketFilter = "open" | "closed" | "all";
 
@@ -45,6 +46,19 @@ export function createTicketsService({ db, now = () => new Date() }: TicketsServ
   }
 
   return {
+    async findAnalystByEmail(email: string): Promise<Analyst | null> {
+      const [row] = await db
+        .select()
+        .from(analysts)
+        .where(eq(analysts.email, email.trim().toLowerCase()));
+      return row ?? null;
+    },
+
+    async getAnalyst(analystId: string): Promise<Analyst | null> {
+      const [row] = await db.select().from(analysts).where(eq(analysts.id, analystId));
+      return row ?? null;
+    },
+
     async findEmployeeByEmail(email: string): Promise<Employee | null> {
       const [row] = await db
         .select()
