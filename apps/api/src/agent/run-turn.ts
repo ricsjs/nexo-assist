@@ -1,6 +1,8 @@
 import { RequestContext } from "@mastra/core/request-context";
+import type { TraceStep, TurnTrace } from "@nexo/domain";
 import { MAX_STEPS_PER_MESSAGE, type NexoAgent } from "./nexo-agent.js";
 import type { AgentSession, NexoRequestContext } from "./session.js";
+import { describeToolCall } from "./trace.js";
 
 type StreamOutput = Awaited<ReturnType<NexoAgent["stream"]>>;
 type ResponseMessage = NonNullable<Awaited<StreamOutput["response"]>["messages"]>[number];
@@ -12,6 +14,7 @@ export type ChatMessage = { role: "user"; content: string } | ResponseMessage;
 export type TurnEvent =
   | { type: "tool-call"; toolName: string; args: unknown }
   | { type: "tool-result"; toolName: string; result: unknown }
+  | { type: "step"; step: TraceStep }
   | { type: "text"; text: string };
 
 // Falha ao falar com o provedor do LLM. O tipo separa "espere e tente de novo"
@@ -48,23 +51,30 @@ export class ModelCallError extends Error {
 export const TURN_TIMEOUT_MS = 60_000;
 
 export type TurnResult =
-  | { status: "answered"; text: string }
+  | { status: "answered"; text: string; trace: TurnTrace }
   // Conversa com analista: o agent não responde (Anexo A, "Transferência").
   | { status: "paused" };
 
 // Processa uma mensagem do funcionário: avança o turno, roda o agent com a sessão
 // no requestContext e repassa os eventos (ferramentas e texto) conforme chegam.
-export async function runTurn(
-  agent: NexoAgent,
-  session: AgentSession,
-  history: ChatMessage[],
-  text: string,
-  onEvent: (event: TurnEvent) => void = () => {},
-): Promise<TurnResult> {
+export interface RunTurnInput {
+  agent: NexoAgent;
+  // Só para o registro: qual modelo respondeu.
+  model: string;
+  session: AgentSession;
+  history: ChatMessage[];
+  text: string;
+  onEvent?: (event: TurnEvent) => void;
+}
+
+export async function runTurn({ agent, model, session, history, text, onEvent = () => {} }: RunTurnInput): Promise<TurnResult> {
   if (session.handoff) return { status: "paused" };
 
   const turnStart = history.length;
   session.turn++;
+  session.decision = null;
+  const startedAt = Date.now();
+  const steps: TraceStep[] = [];
   history.push({ role: "user", content: text });
   const requestContext = new RequestContext<NexoRequestContext>([["session", session]]);
   try {
@@ -78,6 +88,13 @@ export async function runTurn(
         onEvent({ type: "tool-call", toolName: chunk.payload.toolName, args: chunk.payload.args });
       } else if (chunk.type === "tool-result") {
         onEvent({ type: "tool-result", toolName: chunk.payload.toolName, result: chunk.payload.result });
+        // record_decision é a declaração do modelo, não uma ação: vai para trace.decision.
+        if (chunk.payload.toolName !== "record_decision") {
+          for (const s of describeToolCall(chunk.payload.toolName, chunk.payload.args, chunk.payload.result)) {
+            steps.push(s);
+            onEvent({ type: "step", step: s });
+          }
+        }
       } else if (chunk.type === "text-delta") {
         answer += chunk.payload.text;
         onEvent({ type: "text", text: chunk.payload.text });
@@ -93,7 +110,16 @@ export async function runTurn(
     }
     if (answer.trim() === "") throw new ModelCallError("empty_answer", finish);
     history.push(...((await result.response).messages ?? [{ role: "assistant", content: answer }]));
-    return { status: "answered", text: answer };
+    const usage = await result.totalUsage;
+    const trace: TurnTrace = {
+      turn: session.turn,
+      decision: session.decision,
+      steps,
+      model,
+      durationMs: Date.now() - startedAt,
+      tokens: usage ? { input: usage.inputTokens ?? 0, output: usage.outputTokens ?? 0 } : null,
+    };
+    return { status: "answered", text: answer, trace };
   } catch (error) {
     // Desfaz a mensagem para o funcionário poder reenviar sem bagunçar o histórico.
     history.length = turnStart;

@@ -124,3 +124,27 @@ describe("transferência", () => {
     expect(teamFor("critical")).toBe("N2");
   });
 });
+
+describe("registro da decisão", () => {
+  const decision = {
+    understood: "Quer saber se a VPN tem solução",
+    intent: "question",
+    action: "Buscar na central de ajuda",
+    reason: "Dúvidas comuns são resolvidas pela central",
+  };
+
+  it("guarda a decisão na sessão", async () => {
+    expect(await run(tools.record_decision, { ...decision, confidence: 0.9 })).toEqual({ ok: true });
+    expect(session.decision).toMatchObject({ intent: "question", confidence: 0.9 });
+  });
+
+  it("confiança baixa orienta transferir para um analista", async () => {
+    const result = await run(tools.record_decision, { ...decision, confidence: 0.41 });
+    expect(result.hint).toMatch(/handoff_to_analyst/);
+  });
+
+  it("fora do escopo com confiança baixa não vira transferência", async () => {
+    const result = await run(tools.record_decision, { ...decision, intent: "out_of_scope", confidence: 0.3 });
+    expect(result.hint).toBeUndefined();
+  });
+});

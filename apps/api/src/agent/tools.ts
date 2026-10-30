@@ -3,8 +3,10 @@ import {
   AFFECTED_LABEL,
   canReopen,
   CATEGORY_LABEL,
+  Decision,
   HandoffReason,
   isOverdue,
+  LOW_CONFIDENCE,
   PRIORITY_RULES,
   slaDeadline,
   TICKET_STATUS_LABEL,
@@ -72,6 +74,26 @@ export function teamFor(reason: HandoffReason): SupportTeam {
 // ---------- ferramentas ----------
 
 export function createNexoTools(tickets: TicketsService) {
+  // Transparência: o modelo declara o que entendeu, o que vai fazer, com que segurança e por quê.
+  const recordDecision = createTool({
+    id: "record_decision",
+    description:
+      "Registra sua interpretação da mensagem do funcionário. Chame em TODA mensagem, antes de responder " +
+      "(pode ser junto com as outras ferramentas).",
+    inputSchema: Decision,
+    execute: async (decision, ctx) => {
+      const session = sessionOf(ctx);
+      session.decision = decision;
+      if (decision.confidence < LOW_CONFIDENCE && decision.intent !== "out_of_scope") {
+        return {
+          ok: true,
+          hint: "Confiança baixa: transfira para um analista (handoff_to_analyst com reason low_confidence) e explique ao funcionário.",
+        };
+      }
+      return { ok: true };
+    },
+  });
+
   const searchHelpCenter = createTool({
     id: "search_help_center",
     description:
@@ -276,6 +298,7 @@ export function createNexoTools(tickets: TicketsService) {
   });
 
   return {
+    record_decision: recordDecision,
     search_help_center: searchHelpCenter,
     list_my_tickets: listMyTickets,
     get_ticket: getTicket,

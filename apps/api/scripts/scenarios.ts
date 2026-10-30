@@ -2,6 +2,7 @@ import { createDb, migrateDb, seed } from "@nexo/tickets-service";
 import { createNexoAgent } from "../src/agent/nexo-agent.js";
 import { ModelCallError, runTurn, type ChatMessage } from "../src/agent/run-turn.js";
 import { createSession } from "../src/agent/session.js";
+import { printTrace } from "./print-trace.js";
 import { loadConfig } from "../src/config.js";
 import { createTicketsClient } from "../src/services/tickets.js";
 
@@ -60,11 +61,14 @@ for (const name of names) {
     console.log(`\nfuncionário › ${text}`);
     try {
       const result = await withQuotaWait(() =>
-        runTurn(agent, session, history, text, (event) => {
-          if (event.type === "tool-call") console.log(`  · ${event.toolName} ${JSON.stringify(event.args ?? {})}`);
-        }),
+        runTurn({ agent, model: config.LLM_MODEL, session, history, text }),
       );
-      console.log(result.status === "paused" ? "  [agent pausado: conversa com analista]" : `nexo › ${result.text}`);
+      if (result.status === "paused") {
+        console.log("  [agent pausado: conversa com analista]");
+      } else {
+        printTrace(result.trace);
+        console.log(`nexo › ${result.text}`);
+      }
     } catch (error) {
       if (!(error instanceof ModelCallError)) throw error;
       const reason = (error.cause as { reason?: string; rawReason?: string } | undefined) ?? {};
