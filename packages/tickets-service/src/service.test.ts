@@ -143,3 +143,27 @@ describe("central de ajuda", () => {
     expect(await service.searchKnowledge("quero tirar férias em dezembro")).toEqual([]);
   });
 });
+
+describe("duplicidade", () => {
+  it("aponta chamado aberto da mesma categoria sobre o mesmo assunto", async () => {
+    const dups = await service.findPossibleDuplicates(ANA, {
+      category: "hardware",
+      title: "Notebook muito lento",
+      description: "Está lento desde a atualização",
+    });
+    expect(dups.map((t) => t.id)).toEqual(["INC-20311"]);
+  });
+
+  it("VPN da Ana não é duplicada do chamado de VPN do Bruno", async () => {
+    expect(await service.findPossibleDuplicates(ANA, vpnDraft)).toEqual([]);
+  });
+
+  it("ignora chamados encerrados", async () => {
+    const dups = await service.findPossibleDuplicates(ANA, {
+      category: "access",
+      title: "Senha do SAP bloqueada de novo",
+      description: "SAP bloqueou",
+    });
+    expect(dups).toEqual([]); // INC-20150 está resolvido: reabrir, não duplicar
+  });
+});

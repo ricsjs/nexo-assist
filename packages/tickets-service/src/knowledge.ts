@@ -15,7 +15,7 @@ export function normalize(text: string): string {
   return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
 }
 
-function tokenize(text: string): string[] {
+export function tokenize(text: string): string[] {
   return normalize(text)
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 1 && !STOPWORDS.has(t));

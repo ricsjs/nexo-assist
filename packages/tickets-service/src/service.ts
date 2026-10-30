@@ -2,6 +2,7 @@ import {
   canReopen,
   OPEN_STATUSES,
   TicketDraft,
+  type Category,
   type Employee,
   type SupportTeam,
   type Ticket,
@@ -15,7 +16,7 @@ import {
   ReopenNotAllowedError,
   TicketNotFoundError,
 } from "./errors.js";
-import { rankArticles, type KbMatch } from "./knowledge.js";
+import { rankArticles, tokenize, type KbMatch } from "./knowledge.js";
 import { toEmployee, toKbArticle, toTicket, toTicketUpdate, type TicketUpdate } from "./mappers.js";
 
 const { tickets, ticketUpdates, employees, kbArticles } = schema;
@@ -175,6 +176,21 @@ export function createTicketsService({ db, now = () => new Date() }: TicketsServ
     async searchKnowledge(query: string, limit = 3): Promise<KbMatch[]> {
       const rows = await db.select().from(kbArticles);
       return rankArticles(rows.map(toKbArticle), query, limit);
+    },
+
+    // Sem duplicidade (Anexo A): chamados abertos do funcionário, na mesma categoria,
+    // que dividem pelo menos uma palavra relevante com o problema novo.
+    async findPossibleDuplicates(
+      employeeId: string,
+      candidate: { category: Category; title: string; description: string },
+    ): Promise<Ticket[]> {
+      const terms = new Set(tokenize(`${candidate.title} ${candidate.description}`));
+      const open = await this.listTickets(employeeId, "open");
+      return open.filter(
+        (t) =>
+          t.category === candidate.category &&
+          tokenize(`${t.title} ${t.description}`).some((w) => terms.has(w)),
+      );
     },
   };
 }
