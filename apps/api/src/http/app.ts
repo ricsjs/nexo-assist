@@ -57,6 +57,17 @@ function errorResponse(c: Context, error: unknown) {
   return c.json({ error: "internal", message: "Algo deu errado do nosso lado. Tente de novo." }, 500);
 }
 
+// Streams (SSE) não podem ser compactados nem guardados em buffer por proxies no caminho
+// (o do Next em dev, o da plataforma em produção): o gzip segura os eventos até juntar dados,
+// e o navegador só os recebe muito depois. no-transform e X-Accel-Buffering pedem isso.
+function sse(c: Context, run: Parameters<typeof streamSSE>[1]) {
+  const res = streamSSE(c, run);
+  // Definido depois: o streamSSE escreve o próprio Cache-Control por cima.
+  res.headers.set("Cache-Control", "no-cache, no-transform");
+  res.headers.set("X-Accel-Buffering", "no");
+  return res;
+}
+
 function friendlyModelError(error: ModelCallError): string {
   switch (error.kind) {
     case "rate_limited":
@@ -110,7 +121,7 @@ export function createApp({ tickets, conversations, sessionSecret, secureCookies
   // Canal de avisos em tempo real (SSE): "sua conversa mudou". A tela então busca /chat.
   // O ping a cada 15 s mantém a conexão aberta através de proxies.
   const changes = (c: Context, topic: Topic) =>
-    streamSSE(c, async (stream) => {
+    sse(c, async (stream) => {
       const unsubscribe = events.subscribe(topic, () => void stream.writeSSE({ event: "changed", data: "{}" }));
       stream.onAbort(unsubscribe);
       await stream.writeSSE({ event: "ready", data: "{}" });
@@ -143,7 +154,7 @@ export function createApp({ tickets, conversations, sessionSecret, secureCookies
       return tooMany(c, global.retryAfterMs, "O assistente atingiu o limite de uso de hoje. Ligue no ramal 4000 se for urgente.");
     }
 
-    return streamSSE(c, async (stream) => {
+    return sse(c, async (stream) => {
       try {
         const conversation = await conversations.sendMessage(employee, body.data.text, (event) => {
           if (event.type === "step") void stream.writeSSE({ event: "step", data: JSON.stringify(event.step) });

@@ -28,7 +28,7 @@ Na primeira execução os bancos são criados e recebem os dados de exemplo auto
 | Comando | O que faz |
 |---|---|
 | `pnpm dev` | Sobe api e web em modo desenvolvimento |
-| `pnpm test` | Roda os 88 testes (domínio, serviço de chamados, agent e api) |
+| `pnpm test` | Roda os 90 testes (domínio, serviço de chamados, agent e api) |
 | `pnpm typecheck` | Checa os tipos dos 4 projetos |
 | `pnpm db:seed` | Recria os chamados e funcionários de exemplo (reseta a demonstração) |
 | `pnpm chat [email]` | Conversa com o agent no terminal, mostrando ações e decisão |
@@ -68,7 +68,7 @@ Decisões principais:
 - **O serviço de chamados é separado do agent** (pacote próprio com banco próprio). O agent só enxerga o que o `index.ts` do serviço exporta; não há como consultar o banco por fora. Hoje é uma biblioteca no mesmo processo; virar microsserviço seria trocar as chamadas de função por HTTP, sem mudar regra nem teste.
 - **Regras do service desk em código testado, não no prompt.** Prazos, vencimento, reabertura, privacidade, validação do chamado, duplicidade e "só cria depois de confirmar" são garantidos pelo código. O modelo interpreta a conversa e escolhe a ferramenta.
 - **Persistência:** conversas, mensagens, rascunho pendente, transferência e status (com o agent, aguardando atendente, com analista, encerrada) ficam em SQLite e sobrevivem a reinícios. O funcionário volta outro dia e continua a mesma conversa.
-- **Tempo real (SSE):** a resposta do agent chega em pedaços, com as ações antes do texto. Além disso, cada tela mantém um canal de avisos aberto (`/api/chat/events` e `/api/console/events`): quando uma conversa muda — analista assumiu, respondeu, devolveu, encerrou; funcionário escreveu; transferência nova —, o servidor avisa "mudou" e a tela busca a conversa pela rota normal, que checa o login. Nenhum dado passa pelo canal, e cada funcionário só recebe avisos das próprias conversas. Escolhi SSE em vez de WebSocket porque só o servidor precisa avisar (o navegador envia por `POST`), o projeto já usa SSE, o `EventSource` reconecta sozinho e não é preciso tratar upgrade de conexão no proxy nem no deploy.
+- **Tempo real (SSE):** a resposta do agent chega em pedaços, com as ações antes do texto. Além disso, cada tela mantém um canal de avisos aberto (`/api/chat/events` e `/api/console/events`): quando uma conversa muda — analista assumiu, respondeu, devolveu, encerrou; funcionário escreveu; transferência nova —, o servidor avisa "mudou" e a tela busca a conversa pela rota normal, que checa o login. Nenhum dado passa pelo canal, e cada funcionário só recebe avisos das próprias conversas. Escolhi SSE em vez de WebSocket porque só o servidor precisa avisar (o navegador envia por `POST`), o projeto já usa SSE, o `EventSource` reconecta sozinho e não é preciso tratar upgrade de conexão no proxy nem no deploy. Os streams saem com `Cache-Control: no-transform` e `X-Accel-Buffering: no`: sem isso, o proxy do Next compactava o canal com gzip e segurava os avisos no buffer (há um teste para isso).
 - **Mesma origem:** o Next repassa `/api` para o servidor do agent; o cookie de sessão fica na origem da página e não é preciso liberar CORS.
 
 ---
@@ -109,10 +109,10 @@ Os cards (lista de chamados, card de chamado, rascunho, opções rápidas) são 
 
 ## Como garanti a qualidade das decisões
 
-1. **Regras determinísticas com testes** (88 no total, `pnpm test`):
+1. **Regras determinísticas com testes** (90 no total, `pnpm test`):
    - **Domínio (21):** prazos com casos de borda — término exatamente às 18h, fim de semana, antes/depois do expediente, crítica em horas corridas, vencido 1 minuto depois do prazo, reabertura com 7 dias exatos vs. 7 dias e 1 minuto. Os testes passam com a máquina em qualquer fuso.
    - **Serviço de chamados (26):** privacidade, numeração, validação do rascunho, duplicidade (a VPN da Ana não é duplicada da VPN do Bruno), complemento que não "zera" o prazo, reabertura, busca na central, instabilidade simulada.
-   - **Agent e api (41):** cada ferramenta chamada como o modelo chamaria — confirmação no mesmo turno recusada, duplicado apontado, chamado alheio não encontrado, transferência para o time certo, confiança baixa orientando transferência; regras de exibição dos cards; rastro legível; retry com backoff; transições de estado do console; avisos em tempo real só para o dono da conversa; limites de uso.
+   - **Agent e api (43):** cada ferramenta chamada como o modelo chamaria — confirmação no mesmo turno recusada, duplicado apontado, chamado alheio não encontrado, transferência para o time certo, confiança baixa orientando transferência; regras de exibição dos cards; rastro legível; retry com backoff; transições de estado do console; avisos em tempo real só para o dono da conversa; limites de uso.
 2. **Testes que falham quando deveriam.** Sabotei o código de propósito (expediente até 17h; filtro de dono do chamado removido) e confirmei que os testes quebram.
 3. **Cenários com o modelo real** (`pnpm --filter @nexo/api scenarios`): dúvida pela central, consulta de status, abertura com rascunho, fora do escopo, privacidade e transferência, imprimindo as decisões. Foi assim que encontrei e corrigi um problema real: com o histórico só em texto, o modelo "esquecia" o rascunho mostrado e montava outro ao receber o "pode criar"; hoje o histórico guarda as chamadas de ferramenta.
 4. **Falhas do modelo tratadas como erro.** O Mastra sinaliza erro do provedor, cota estourada, demora e resposta vazia como eventos, sem lançar. Cada caso vira um erro tipado; nada é gravado e a tela oferece "Tentar de novo". Há limite de 60 s por mensagem.
