@@ -3,16 +3,14 @@
 import type { ConversationSummary, ConversationView as Conversation, Employee, TicketView } from "@nexo/domain";
 import { LogOut, MessageSquare } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConversationList, type ConsoleFilter } from "@/components/console/conversation-list";
 import { ConversationView } from "@/components/console/conversation-view";
 import { TicketsPanel } from "@/components/console/tickets-panel";
 import { api, ApiError } from "@/lib/api";
 import { initials } from "@/lib/format";
+import { useLiveUpdates } from "@/lib/live-updates";
 import { logout, SessionGate, useSessionUser } from "@/lib/session";
-
-// Lista e conversa aberta se atualizam sozinhas: transferências novas aparecem sem recarregar.
-const POLL_MS = 4000;
 
 interface Detail {
   conversation: Conversation;
@@ -64,17 +62,24 @@ function Console() {
 
   useEffect(() => {
     void loadList();
-    const id = setInterval(() => void loadList(), POLL_MS);
-    return () => clearInterval(id);
   }, [loadList]);
 
   useEffect(() => {
     if (!selectedId) return;
     setActionError(null);
     void loadDetail(selectedId);
-    const id = setInterval(() => void loadDetail(selectedId), POLL_MS);
-    return () => clearInterval(id);
   }, [selectedId, loadDetail]);
+
+  // Tempo real: qualquer conversa que mudar (transferência nova, mensagem da funcionária,
+  // outro analista assumindo) avisa o console, que recarrega a lista e a conversa aberta.
+  const selectedRef = useRef(selectedId);
+  useEffect(() => {
+    selectedRef.current = selectedId;
+  }, [selectedId]);
+  useLiveUpdates("/api/console/events", () => {
+    void loadList();
+    if (selectedRef.current) void loadDetail(selectedRef.current);
+  });
 
   // Assumir, devolver, encerrar: chama o api e recarrega lista e conversa.
   async function act(path: string, body: unknown = {}): Promise<boolean> {

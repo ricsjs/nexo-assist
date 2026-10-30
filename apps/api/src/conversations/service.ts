@@ -15,6 +15,7 @@ import type { NexoAgent } from "../agent/nexo-agent.ts";
 import { runTurn, type ChatMessage, type TurnEvent } from "../agent/run-turn.ts";
 import { createSession } from "../agent/session.ts";
 import { schema, type AppDb } from "../db/client.ts";
+import type { ConversationEvents } from "./events.ts";
 
 const { conversations, messages } = schema;
 type ConversationRow = typeof conversations.$inferSelect;
@@ -35,15 +36,18 @@ export interface ConversationServiceDeps {
   tickets: TicketsService;
   agent: NexoAgent;
   model: string;
+  // Avisa as telas abertas (SSE) quando uma conversa muda.
+  events?: ConversationEvents;
   now?: () => Date;
 }
 
 export type ConsoleFilter = "all" | "for_you" | "with_agent" | "mine";
 
-export function createConversationService({ db, tickets, agent, model, now = () => new Date() }: ConversationServiceDeps) {
+export function createConversationService({ db, tickets, agent, model, events, now = () => new Date() }: ConversationServiceDeps) {
   // Uma mensagem por vez em cada conversa: duas abas mandando juntas não embaralham o estado.
   const busy = new Set<string>();
   const iso = () => now().toISOString();
+  const notify = (employeeId: string) => events?.conversationChanged(employeeId);
 
   async function rowsOf(conversationId: string) {
     return db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(asc(messages.id));
@@ -76,6 +80,17 @@ export function createConversationService({ db, tickets, agent, model, now = () 
       .select()
       .from(conversations)
       .where(and(eq(conversations.employeeId, employeeId), ne(conversations.status, "closed")))
+      .orderBy(desc(conversations.updatedAt))
+      .limit(1);
+    return row ?? null;
+  }
+
+  // A conversa mais recente, mesmo encerrada: o funcionário vê como terminou o atendimento.
+  async function latestConversation(employeeId: string): Promise<ConversationRow | null> {
+    const [row] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.employeeId, employeeId))
       .orderBy(desc(conversations.updatedAt))
       .limit(1);
     return row ?? null;
@@ -123,14 +138,16 @@ export function createConversationService({ db, tickets, agent, model, now = () 
     // ---------- funcionário ----------
 
     async getChat(employee: Employee): Promise<ConversationView> {
-      const row = (await activeConversation(employee.id)) ?? (await createConversation(employee.id));
+      const row = (await latestConversation(employee.id)) ?? (await createConversation(employee.id));
       return view(row);
     },
 
     async startNewChat(employee: Employee): Promise<ConversationView> {
       const current = await activeConversation(employee.id);
       if (current) await touch(current.id, { status: "closed", closedAt: iso() });
-      return view(await createConversation(employee.id));
+      const fresh = await createConversation(employee.id);
+      notify(employee.id);
+      return view(fresh);
     },
 
     async sendMessage(employee: Employee, text: string, onEvent: (e: TurnEvent) => void = () => {}): Promise<ConversationView> {
@@ -145,6 +162,7 @@ export function createConversationService({ db, tickets, agent, model, now = () 
         if (conv.status !== "with_agent") {
           await addMessage({ conversationId: conv.id, role: "user", content: text, authorId: employee.id });
           await touch(conv.id, { userMessages: conv.userMessages + 1 });
+          notify(employee.id);
           return view(await requireConversation(conv.id));
         }
 
@@ -180,6 +198,7 @@ export function createConversationService({ db, tickets, agent, model, now = () 
         if (session.handoff) {
           await addMessage({ conversationId: conv.id, role: "event", content: `Transferida para Suporte ${session.handoff.team}` });
         }
+        notify(employee.id);
         return view(await requireConversation(conv.id));
       } finally {
         busy.delete(conv.id);
@@ -247,6 +266,7 @@ export function createConversationService({ db, tickets, agent, model, now = () 
       }
       await touch(row.id, { status: "with_analyst", analystId: analyst.id });
       await addMessage({ conversationId: row.id, role: "event", content: `${analyst.name} assumiu · agent pausado` });
+      notify(row.employeeId);
     },
 
     async returnToAgent(conversationId: string, analyst: Analyst) {
@@ -254,12 +274,14 @@ export function createConversationService({ db, tickets, agent, model, now = () 
       if (row.status === "closed") throw new ConversationError("invalid_state", "Conversa encerrada.");
       await touch(row.id, { status: "with_agent", analystId: null, handoff: null, lowConfidence: null });
       await addMessage({ conversationId: row.id, role: "event", content: `${analyst.name} devolveu a conversa ao agent` });
+      notify(row.employeeId);
     },
 
     async close(conversationId: string, analyst: Analyst) {
       const row = await requireConversation(conversationId);
       await touch(row.id, { status: "closed", closedAt: iso() });
       await addMessage({ conversationId: row.id, role: "event", content: `Atendimento encerrado por ${analyst.name}` });
+      notify(row.employeeId);
     },
 
     async sendAnalystMessage(conversationId: string, analyst: Analyst, text: string) {
@@ -276,6 +298,7 @@ export function createConversationService({ db, tickets, agent, model, now = () 
         authorTeam: analyst.team,
       });
       await touch(row.id, {});
+      notify(row.employeeId);
     },
   };
 }

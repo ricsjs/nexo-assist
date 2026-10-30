@@ -1,9 +1,10 @@
 import { MAX_MESSAGES_PER_SESSION, type Analyst, type Employee } from "@nexo/domain";
 import { createDb, createTicketsService, migrateDb, seed, type Db } from "@nexo/tickets-service";
 import { eq } from "drizzle-orm";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NexoAgent } from "../agent/nexo-agent.ts";
 import { createAppDb, migrateAppDb, schema, type AppDb } from "../db/client.ts";
+import { createConversationEvents, type ConversationEvents } from "./events.ts";
 import { ConversationError, createConversationService, type ConversationService } from "./service.ts";
 
 // Agent que acusa erro se for chamado: prova que, com analista, o agent não responde.
@@ -16,6 +17,7 @@ const agentThatMustNotRun = {
 let ticketsDb: Db;
 let appDb: AppDb;
 let service: ConversationService;
+let events: ConversationEvents;
 let ana: Employee;
 let rafael: Analyst;
 let juliana: Analyst;
@@ -27,7 +29,8 @@ beforeEach(async () => {
   const tickets = createTicketsService({ db: ticketsDb });
   appDb = createAppDb(":memory:");
   await migrateAppDb(appDb);
-  service = createConversationService({ db: appDb, tickets, agent: agentThatMustNotRun, model: "test" });
+  events = createConversationEvents();
+  service = createConversationService({ db: appDb, tickets, agent: agentThatMustNotRun, model: "test", events });
   ana = (await tickets.findEmployeeByEmail("ana.souza@nexo.com.br"))!;
   rafael = (await tickets.findAnalystByEmail("rafael.lima@nexo.com.br"))!;
   juliana = (await tickets.findAnalystByEmail("juliana.costa@nexo.com.br"))!;
@@ -103,10 +106,25 @@ describe("console do analista", () => {
     expect(detail).toMatchObject({ status: "with_agent", handoff: null, analystName: null });
   });
 
-  it("encerrar fecha a conversa e o funcionário começa outra na próxima visita", async () => {
+  it("encerrar fecha a conversa; o funcionário vê o encerramento e pode começar outra", async () => {
     const conv = await service.getChat(ana);
     await transferred(conv.id);
     await service.close(conv.id, rafael);
-    expect((await service.getChat(ana)).id).not.toBe(conv.id);
+    const after = await service.getChat(ana);
+    expect(after).toMatchObject({ id: conv.id, status: "closed" });
+    expect(after.messages.at(-1)?.content).toBe("Atendimento encerrado por Rafael Lima");
+    expect((await service.startNewChat(ana)).id).not.toBe(conv.id);
+  });
+
+  it("cada ação do analista avisa a tela da funcionária em tempo real", async () => {
+    const conv = await service.getChat(ana);
+    await transferred(conv.id);
+    const anaScreen = vi.fn();
+    events.subscribe("employee:emp-ana", anaScreen);
+
+    await service.assume(conv.id, rafael);
+    await service.sendAnalystMessage(conv.id, rafael, "Oi, Ana!");
+    await service.returnToAgent(conv.id, rafael);
+    expect(anaScreen).toHaveBeenCalledTimes(3);
   });
 });

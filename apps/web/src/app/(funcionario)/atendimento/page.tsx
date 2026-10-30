@@ -7,10 +7,8 @@ import { AgentMessage, AnalystMessage, EventLine, StreamingAgentMessage, UserBub
 import type { WidgetActions } from "@/components/chat/widgets";
 import { PageHeader, StatusPill } from "@/components/page-header";
 import { api, ApiError, sendChatMessage } from "@/lib/api";
+import { useLiveUpdates } from "@/lib/live-updates";
 import { useSessionUser } from "@/lib/session";
-
-// Enquanto a conversa está com um analista, a tela busca mensagens novas de tempos em tempos.
-const POLL_MS = 4000;
 
 const SUGGESTIONS = [
   "Qual o status do meu chamado?",
@@ -48,12 +46,15 @@ export default function ChatPage() {
     void load();
   }, [load]);
 
-  // Com analista: atualiza sozinha para mostrar as respostas dele.
+  // Tempo real: o api avisa quando a conversa muda (analista assumiu, respondeu, devolveu, encerrou).
+  // Durante um envio, a própria resposta traz a conversa atualizada; o aviso é ignorado.
+  const streamingRef = useRef(false);
   useEffect(() => {
-    if (!conversation || conversation.status === "with_agent" || streaming) return;
-    const id = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(id);
-  }, [conversation, streaming, load]);
+    streamingRef.current = streaming !== null;
+  }, [streaming]);
+  useLiveUpdates("/api/chat/events", () => {
+    if (!streamingRef.current) void load();
+  });
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -99,15 +100,17 @@ export default function ChatPage() {
   }
   if (!conversation) return <Centered>Carregando conversa…</Centered>;
 
-  const limitReached = conversation.userMessages >= conversation.messageLimit;
-  const withHuman = conversation.status !== "with_agent";
+  const closed = conversation.status === "closed";
+  // Conversa encerrada: a próxima mensagem já começa uma nova, então o limite não se aplica.
+  const limitReached = !closed && conversation.userMessages >= conversation.messageLimit;
+  const withHuman = conversation.status === "awaiting_analyst" || conversation.status === "with_analyst";
   const baseActions: Omit<WidgetActions, "isLatest"> = {
     send: (t) => void send(t),
     prefill: (t) => {
       setDraft(t);
       inputRef.current?.focus();
     },
-    disabled: Boolean(streaming) || limitReached || withHuman,
+    disabled: Boolean(streaming) || limitReached || withHuman || closed,
     pendingDraftId: conversation.pendingDraftId,
   };
 
@@ -136,6 +139,11 @@ export default function ChatPage() {
           )}
 
           {withHuman && <HandoffBanner conversation={conversation} />}
+          {closed && (
+            <p className="rounded-xl border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
+              Atendimento encerrado. Se precisar de algo mais, é só escrever abaixo: uma nova conversa começa.
+            </p>
+          )}
 
           {error && (
             <div className="flex items-center justify-between gap-4 rounded-xl border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
@@ -206,6 +214,7 @@ export default function ChatPage() {
 }
 
 function ChatStatus({ conversation }: { conversation: ConversationView }) {
+  if (conversation.status === "closed") return <StatusPill tone="info">Atendimento encerrado</StatusPill>;
   if (conversation.status === "awaiting_analyst") return <StatusPill tone="warn">Aguardando atendente</StatusPill>;
   if (conversation.status === "with_analyst") {
     return <StatusPill tone="info">{conversation.analystName ?? "Analista"} está atendendo</StatusPill>;

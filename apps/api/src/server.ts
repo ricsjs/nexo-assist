@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { createNexoAgent } from "./agent/nexo-agent.ts";
 import { loadConfig } from "./config.ts";
+import { createConversationEvents } from "./conversations/events.ts";
 import { createConversationService } from "./conversations/service.ts";
 import { createAppDb, migrateAppDb } from "./db/client.ts";
 import { createApp } from "./http/app.ts";
@@ -24,8 +25,10 @@ const tickets = await createTicketsClient({
 const db = createAppDb();
 await migrateAppDb(db);
 
+const events = createConversationEvents();
 const conversations = createConversationService({
   db,
+  events,
   tickets,
   agent: createNexoAgent(config.LLM_MODEL, tickets),
   model: config.LLM_MODEL,
@@ -36,6 +39,7 @@ const app = createApp({
   conversations,
   sessionSecret: config.SESSION_SECRET,
   secureCookies: config.NODE_ENV === "production",
+  events,
   limits: {
     messagesPer10Min: config.RATE_LIMIT_MESSAGES_PER_10MIN,
     dailyMessageCap: config.DAILY_MESSAGE_CAP,

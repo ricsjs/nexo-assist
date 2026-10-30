@@ -4,6 +4,7 @@ import { streamSSE } from "hono/streaming";
 import { z } from "zod";
 import { ModelCallError } from "../agent/run-turn.ts";
 import { toTicketView } from "../agent/widgets.ts";
+import type { ConversationEvents, Topic } from "../conversations/events.ts";
 import { ConversationError, type ConsoleFilter, type ConversationService } from "../conversations/service.ts";
 import { createAuth, type AuthEnv } from "./auth.ts";
 import { createRateLimiter, DAY, MINUTE } from "./rate-limit.ts";
@@ -23,6 +24,7 @@ export interface AppDeps {
   sessionSecret: string;
   secureCookies: boolean;
   limits: UsageLimits;
+  events: ConversationEvents;
 }
 
 // Mensagens longas não ajudam o agent e encarecem cada chamada ao modelo.
@@ -66,7 +68,7 @@ function friendlyModelError(error: ModelCallError): string {
   }
 }
 
-export function createApp({ tickets, conversations, sessionSecret, secureCookies, limits }: AppDeps) {
+export function createApp({ tickets, conversations, sessionSecret, secureCookies, limits, events }: AppDeps) {
   const auth = createAuth({ tickets, secret: sessionSecret, secure: secureCookies });
   const loginLimit = createRateLimiter({ limit: limits.loginsPerMinute, windowMs: MINUTE });
   const messageLimit = createRateLimiter({ limit: limits.messagesPer10Min, windowMs: 10 * MINUTE });
@@ -104,6 +106,23 @@ export function createApp({ tickets, conversations, sessionSecret, secureCookies
   });
 
   // ---------- chat do funcionário ----------
+
+  // Canal de avisos em tempo real (SSE): "sua conversa mudou". A tela então busca /chat.
+  // O ping a cada 15 s mantém a conexão aberta através de proxies.
+  const changes = (c: Context, topic: Topic) =>
+    streamSSE(c, async (stream) => {
+      const unsubscribe = events.subscribe(topic, () => void stream.writeSSE({ event: "changed", data: "{}" }));
+      stream.onAbort(unsubscribe);
+      await stream.writeSSE({ event: "ready", data: "{}" });
+      while (!stream.aborted) {
+        await stream.sleep(15_000);
+        if (!stream.aborted) await stream.writeSSE({ event: "ping", data: "{}" });
+      }
+      unsubscribe();
+    });
+
+  app.get("/chat/events", auth.requireEmployee, (c) => changes(c, `employee:${c.get("employee").id}`));
+  app.get("/console/events", auth.requireAnalyst, (c) => changes(c, "console"));
 
   app.get("/chat", auth.requireEmployee, async (c) => c.json(await conversations.getChat(c.get("employee"))));
 
