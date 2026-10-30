@@ -1,5 +1,5 @@
-import { CATEGORIES, type Category } from "@nexo/domain";
+import { CATEGORY_LABEL, Category } from "@nexo/domain";
 
-export function listCategories(): readonly Category[] {
-  return CATEGORIES;
+export function listCategories(): string[] {
+  return Category.options.map((c) => CATEGORY_LABEL[c]);
 }

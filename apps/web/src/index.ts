@@ -1,3 +1,3 @@
 import type { Category } from "@nexo/domain";
 
-export const placeholder: Category = "Outros";
+export const placeholder: Category = "other";

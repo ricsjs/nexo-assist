@@ -1,10 +1,4 @@
-export const CATEGORIES = [
-  "Acesso",
-  "Rede e VPN",
-  "Hardware",
-  "Software",
-  "E-mail",
-  "Outros",
-] as const;
-
-export type Category = (typeof CATEGORIES)[number];
+export * from "./ticket.js";
+export * from "./people.js";
+export * from "./knowledge.js";
+export * from "./conversation.js";

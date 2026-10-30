@@ -31,7 +31,11 @@ importers:
         specifier: workspace:*
         version: link:../../packages/domain
 
-  packages/domain: {}
+  packages/domain:
+    dependencies:
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
 
   packages/tickets-service:
     dependencies:
@@ -217,6 +221,9 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.28.2':
@@ -336,3 +343,5 @@ snapshots:
       fsevents: 2.3.3
 
   typescript@5.9.3: {}
+
+  zod@4.6.7: {}
