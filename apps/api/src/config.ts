@@ -14,6 +14,10 @@ const Env = z
     ANTHROPIC_API_KEY: z.string().optional(),
     TICKETS_OUTAGE_RATE: z.coerce.number().min(0).max(1).default(0.05),
     TICKETS_OUTAGE_MS: z.coerce.number().int().positive().default(1500),
+    PORT: z.coerce.number().int().positive().default(3001),
+    NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+    // Assina o cookie de sessão. Em produção é obrigatório e precisa ser longo.
+    SESSION_SECRET: z.string().min(32).default("dev-only-secret-change-me-0123456789abcdef"),
   })
   // Falha cedo, com mensagem clara, se a chave do provedor escolhido não estiver definida.
   .superRefine((env, ctx) => {
@@ -25,6 +29,9 @@ const Env = z
     const key = required[provider];
     if (key && !env[key]) {
       ctx.addIssue({ code: "custom", path: [key], message: `obrigatória para usar ${env.LLM_MODEL}` });
+    }
+    if (env.NODE_ENV === "production" && env.SESSION_SECRET.startsWith("dev-only")) {
+      ctx.addIssue({ code: "custom", path: ["SESSION_SECRET"], message: "defina um segredo próprio em produção" });
     }
   });
 

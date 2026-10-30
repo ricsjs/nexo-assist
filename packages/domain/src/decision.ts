@@ -38,7 +38,9 @@ export const Decision = z.object({
     .array(z.string().max(40))
     .max(4)
     .optional()
-    .describe("Opções curtas que o funcionário pode tocar para responder a sua pergunta (ex.: Só eu, Minha equipe)"),
+    .describe(
+      "Só quando sua resposta termina com uma pergunta de escolha: as respostas curtas possíveis (ex.: Só eu, Minha equipe, Toda a empresa). Omita nos outros casos.",
+    ),
 });
 export type Decision = z.infer<typeof Decision>;
 

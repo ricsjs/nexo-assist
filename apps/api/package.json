@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts",
     "chat": "tsx scripts/chat.ts",
     "demo:outages": "tsx scripts/outage-demo.ts",
     "typecheck": "tsc --noEmit",
