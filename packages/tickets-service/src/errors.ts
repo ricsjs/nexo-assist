@@ -1,6 +1,11 @@
 // Erros com código, para quem chama o serviço (o agent) saber o que aconteceu
 // e explicar ao funcionário sem depender do texto da mensagem.
-export type TicketsErrorCode = "ticket_not_found" | "employee_not_found" | "invalid_draft" | "reopen_not_allowed";
+export type TicketsErrorCode =
+  | "ticket_not_found"
+  | "employee_not_found"
+  | "invalid_draft"
+  | "reopen_not_allowed"
+  | "service_unavailable";
 
 export class TicketsServiceError extends Error {
   constructor(
@@ -35,5 +40,13 @@ export class InvalidDraftError extends TicketsServiceError {
 export class ReopenNotAllowedError extends TicketsServiceError {
   constructor(ticketId: string) {
     super("reopen_not_allowed", `${ticketId} só pode ser reaberto se foi resolvido há até 7 dias.`);
+  }
+}
+
+// O sistema de chamados é legado e às vezes fica fora por alguns segundos (PRD).
+// É o único erro transitório: vale tentar de novo.
+export class ServiceUnavailableError extends TicketsServiceError {
+  constructor() {
+    super("service_unavailable", "Sistema de chamados indisponível no momento.");
   }
 }

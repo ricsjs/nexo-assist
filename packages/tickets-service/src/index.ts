@@ -4,4 +4,5 @@ export { seed } from "./seed/index.js";
 export { createTicketsService, type TicketsService, type TicketFilter, type TicketWithHistory } from "./service.js";
 export type { TicketUpdate } from "./mappers.js";
 export type { KbMatch } from "./knowledge.js";
+export { withSimulatedOutages, type OutageOptions } from "./outages.js";
 export * from "./errors.js";
