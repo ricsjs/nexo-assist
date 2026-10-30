@@ -1,8 +1,8 @@
 // Porta de entrada do serviço de chamados: só o que está aqui pode ser usado de fora.
-export { createDb, migrateDb, type Db } from "./db/index.js";
-export { seed } from "./seed/index.js";
-export { createTicketsService, type TicketsService, type TicketFilter, type TicketWithHistory } from "./service.js";
-export type { TicketUpdate } from "./mappers.js";
-export type { KbMatch } from "./knowledge.js";
-export { withSimulatedOutages, type OutageOptions } from "./outages.js";
-export * from "./errors.js";
+export { createDb, migrateDb, type Db } from "./db/index.ts";
+export { seed } from "./seed/index.ts";
+export { createTicketsService, type TicketsService, type TicketFilter, type TicketWithHistory } from "./service.ts";
+export type { TicketUpdate } from "./mappers.ts";
+export type { KbMatch } from "./knowledge.ts";
+export { withSimulatedOutages, type OutageOptions } from "./outages.ts";
+export * from "./errors.ts";

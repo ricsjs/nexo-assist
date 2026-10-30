@@ -1,10 +1,10 @@
 import { createDb, migrateDb, seed } from "@nexo/tickets-service";
-import { createNexoAgent } from "../src/agent/nexo-agent.js";
-import { ModelCallError, runTurn, type ChatMessage } from "../src/agent/run-turn.js";
-import { createSession } from "../src/agent/session.js";
-import { printTrace } from "./print-trace.js";
-import { loadConfig } from "../src/config.js";
-import { createTicketsClient } from "../src/services/tickets.js";
+import { createNexoAgent } from "../src/agent/nexo-agent.ts";
+import { ModelCallError, runTurn, type ChatMessage } from "../src/agent/run-turn.ts";
+import { createSession } from "../src/agent/session.ts";
+import { printTrace } from "./print-trace.ts";
+import { loadConfig } from "../src/config.ts";
+import { createTicketsClient } from "../src/services/tickets.ts";
 
 // Roda conversas roteirizadas contra o modelo de verdade e mostra o que o agent decidiu.
 // Não é teste automático (o LLM varia e custa), é a conferência manual das decisões.

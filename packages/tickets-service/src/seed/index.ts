@@ -1,5 +1,5 @@
-import { schema, type Db } from "../db/index.js";
-import { buildSeedData } from "./data.js";
+import { schema, type Db } from "../db/index.ts";
+import { buildSeedData } from "./data.ts";
 
 // Apaga tudo e recria os dados de exemplo. Roda numa transação: ou entra tudo, ou nada.
 export async function seed(db: Db, now = new Date()): Promise<void> {

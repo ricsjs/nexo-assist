@@ -1,4 +1,4 @@
-import { createTicketsClient } from "../src/services/tickets.js";
+import { createTicketsClient } from "../src/services/tickets.ts";
 
 // Demonstração: com o legado bem instável, as chamadas ainda dão certo por causa do retry.
 const tickets = await createTicketsClient({

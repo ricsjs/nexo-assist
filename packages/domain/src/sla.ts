@@ -1,4 +1,4 @@
-import { PRIORITY_RULES, type Priority, type SlaUnit, type Ticket, isOpen } from "./ticket.js";
+import { PRIORITY_RULES, type Priority, type SlaUnit, type Ticket, isOpen } from "./ticket.ts";
 
 // Horário do service desk: segunda a sexta, 8h às 18h, horário de Brasília.
 // O Brasil não tem horário de verão desde 2019, então o deslocamento é fixo.

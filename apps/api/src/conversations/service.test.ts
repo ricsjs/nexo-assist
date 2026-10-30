@@ -2,9 +2,9 @@ import { MAX_MESSAGES_PER_SESSION, type Analyst, type Employee } from "@nexo/dom
 import { createDb, createTicketsService, migrateDb, seed, type Db } from "@nexo/tickets-service";
 import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { NexoAgent } from "../agent/nexo-agent.js";
-import { createAppDb, migrateAppDb, schema, type AppDb } from "../db/client.js";
-import { ConversationError, createConversationService, type ConversationService } from "./service.js";
+import type { NexoAgent } from "../agent/nexo-agent.ts";
+import { createAppDb, migrateAppDb, schema, type AppDb } from "../db/client.ts";
+import { ConversationError, createConversationService, type ConversationService } from "./service.ts";
 
 // Agent que acusa erro se for chamado: prova que, com analista, o agent não responde.
 const agentThatMustNotRun = {

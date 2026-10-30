@@ -5,7 +5,7 @@ import {
   withSimulatedOutages,
   type TicketsService,
 } from "@nexo/tickets-service";
-import { DEFAULT_RETRY, withRetry, type RetryOptions } from "../lib/retry.js";
+import { DEFAULT_RETRY, withRetry, type RetryOptions } from "../lib/retry.ts";
 
 export interface TicketsClientOptions {
   // Instabilidade simulada do legado; 0 desliga.

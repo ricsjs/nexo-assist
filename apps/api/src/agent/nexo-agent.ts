@@ -1,7 +1,7 @@
 import { Agent } from "@mastra/core/agent";
 import type { TicketsService } from "@nexo/tickets-service";
-import { NEXO_INSTRUCTIONS } from "./instructions.js";
-import { createNexoTools } from "./tools.js";
+import { NEXO_INSTRUCTIONS } from "./instructions.ts";
+import { createNexoTools } from "./tools.ts";
 
 export function createNexoAgent(model: string, tickets: TicketsService) {
   return new Agent({

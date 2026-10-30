@@ -1,6 +1,6 @@
 import type { Decision, TicketView, Widget } from "@nexo/domain";
 import { describe, expect, it } from "vitest";
-import { selectWidgets, type WidgetCandidate } from "./widgets.js";
+import { selectWidgets, type WidgetCandidate } from "./widgets.ts";
 
 const ticket = (id: string) => ({ id }) as TicketView;
 const list = (...ids: string[]): Widget => ({ type: "ticket_list", tickets: ids.map(ticket) });

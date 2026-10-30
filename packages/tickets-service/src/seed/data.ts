@@ -1,4 +1,4 @@
-import type { schema } from "../db/index.js";
+import type { schema } from "../db/index.ts";
 
 type NewEmployee = typeof schema.employees.$inferInsert;
 type NewAnalyst = typeof schema.analysts.$inferInsert;

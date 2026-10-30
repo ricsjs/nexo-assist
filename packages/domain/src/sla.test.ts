@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canReopen, isOverdue, slaDeadline, ticketDeadline } from "./sla.js";
-import type { Priority } from "./ticket.js";
+import { canReopen, isOverdue, slaDeadline, ticketDeadline } from "./sla.ts";
+import type { Priority } from "./ticket.ts";
 
 // Datas escritas no horário de Brasília. 30/10/2026 é uma sexta-feira.
 const at = (local: string) => new Date(`${local}-03:00`);

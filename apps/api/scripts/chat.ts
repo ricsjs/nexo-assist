@@ -1,11 +1,11 @@
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { createNexoAgent } from "../src/agent/nexo-agent.js";
-import { ModelCallError, runTurn, type ChatMessage } from "../src/agent/run-turn.js";
-import { createSession } from "../src/agent/session.js";
-import { printTrace } from "./print-trace.js";
-import { loadConfig, type Config } from "../src/config.js";
-import { createTicketsClient } from "../src/services/tickets.js";
+import { createNexoAgent } from "../src/agent/nexo-agent.ts";
+import { ModelCallError, runTurn, type ChatMessage } from "../src/agent/run-turn.ts";
+import { createSession } from "../src/agent/session.ts";
+import { printTrace } from "./print-trace.ts";
+import { loadConfig, type Config } from "../src/config.ts";
+import { createTicketsClient } from "../src/services/tickets.ts";
 
 // Chat de terminal enquanto a interface não existe.
 // Uso: pnpm chat [email]   (padrão: ana.souza@nexo.com.br)

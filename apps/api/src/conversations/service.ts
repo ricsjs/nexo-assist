@@ -11,10 +11,10 @@ import {
 } from "@nexo/domain";
 import type { TicketsService } from "@nexo/tickets-service";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
-import type { NexoAgent } from "../agent/nexo-agent.js";
-import { runTurn, type ChatMessage, type TurnEvent } from "../agent/run-turn.js";
-import { createSession } from "../agent/session.js";
-import { schema, type AppDb } from "../db/client.js";
+import type { NexoAgent } from "../agent/nexo-agent.ts";
+import { runTurn, type ChatMessage, type TurnEvent } from "../agent/run-turn.ts";
+import { createSession } from "../agent/session.ts";
+import { schema, type AppDb } from "../db/client.ts";
 
 const { conversations, messages } = schema;
 type ConversationRow = typeof conversations.$inferSelect;

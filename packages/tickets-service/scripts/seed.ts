@@ -1,5 +1,5 @@
-import { createDb, migrateDb, schema } from "../src/db/index.js";
-import { seed } from "../src/seed/index.js";
+import { createDb, migrateDb, schema } from "../src/db/index.ts";
+import { seed } from "../src/seed/index.ts";
 
 const db = createDb();
 await migrateDb(db);

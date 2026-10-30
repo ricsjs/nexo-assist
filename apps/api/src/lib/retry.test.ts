@@ -1,6 +1,6 @@
 import { ServiceUnavailableError, TicketNotFoundError } from "@nexo/tickets-service";
 import { describe, expect, it, vi } from "vitest";
-import { backoffDelay, retry, withRetry, type RetryOptions } from "./retry.js";
+import { backoffDelay, retry, withRetry, type RetryOptions } from "./retry.ts";
 
 // Sem espera de verdade e sem aleatoriedade: os testes rodam instantâneos e determinísticos.
 const options = (extra: Partial<RetryOptions> = {}): RetryOptions => ({

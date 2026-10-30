@@ -10,15 +10,15 @@ import {
   type TicketType,
 } from "@nexo/domain";
 import { and, desc, eq, inArray, notInArray, sql } from "drizzle-orm";
-import { schema, type Db } from "./db/index.js";
+import { schema, type Db } from "./db/index.ts";
 import {
   EmployeeNotFoundError,
   InvalidDraftError,
   ReopenNotAllowedError,
   TicketNotFoundError,
-} from "./errors.js";
-import { rankArticles, tokenize, type KbMatch } from "./knowledge.js";
-import { toEmployee, toKbArticle, toTicket, toTicketUpdate, type TicketUpdate } from "./mappers.js";
+} from "./errors.ts";
+import { rankArticles, tokenize, type KbMatch } from "./knowledge.ts";
+import { toEmployee, toKbArticle, toTicket, toTicketUpdate, type TicketUpdate } from "./mappers.ts";
 
 const { tickets, ticketUpdates, employees, analysts, kbArticles } = schema;
 

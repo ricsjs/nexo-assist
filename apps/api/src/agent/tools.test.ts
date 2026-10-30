@@ -1,8 +1,8 @@
 import { RequestContext } from "@mastra/core/request-context";
 import { createDb, createTicketsService, migrateDb, seed, type Db } from "@nexo/tickets-service";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createSession, type AgentSession, type NexoRequestContext } from "./session.js";
-import { createNexoTools, teamFor, type NexoTools } from "./tools.js";
+import { createSession, type AgentSession, type NexoRequestContext } from "./session.ts";
+import { createNexoTools, teamFor, type NexoTools } from "./tools.ts";
 
 // As ferramentas são chamadas direto, como o modelo faria, sem LLM: testa as garantias em código.
 const NOW = new Date("2026-10-30T10:00:00-03:00");

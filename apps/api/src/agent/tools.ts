@@ -18,9 +18,9 @@ import {
 } from "@nexo/domain";
 import { TicketsServiceError, type TicketsService } from "@nexo/tickets-service";
 import { z } from "zod";
-import { formatDateTime, formatRelative } from "../lib/format.js";
-import type { AgentSession, NexoRequestContext, PendingAction } from "./session.js";
-import { toTicketView } from "./widgets.js";
+import { formatDateTime, formatRelative } from "../lib/format.ts";
+import type { AgentSession, NexoRequestContext, PendingAction } from "./session.ts";
+import { toTicketView } from "./widgets.ts";
 
 // ---------- apoio ----------
 

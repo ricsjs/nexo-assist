@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeToolCall } from "./trace.js";
+import { describeToolCall } from "./trace.ts";
 
 const labels = (tool: string, args: unknown, result: unknown) => describeToolCall(tool, args, result).map((s) => s.label);
 

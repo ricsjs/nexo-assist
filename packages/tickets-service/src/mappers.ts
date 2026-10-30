@@ -1,5 +1,5 @@
 import type { Employee, KbArticle, Ticket } from "@nexo/domain";
-import type { schema } from "./db/index.js";
+import type { schema } from "./db/index.ts";
 
 // O banco usa null para "sem valor"; o domínio usa campo ausente.
 // Converter aqui mantém o resto do código livre de null.

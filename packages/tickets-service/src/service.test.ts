@@ -1,9 +1,9 @@
 import type { TicketDraft } from "@nexo/domain";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createDb, migrateDb, type Db } from "./db/index.js";
-import { InvalidDraftError, ReopenNotAllowedError, TicketNotFoundError } from "./errors.js";
-import { seed } from "./seed/index.js";
-import { createTicketsService, type TicketsService } from "./service.js";
+import { createDb, migrateDb, type Db } from "./db/index.ts";
+import { InvalidDraftError, ReopenNotAllowedError, TicketNotFoundError } from "./errors.ts";
+import { seed } from "./seed/index.ts";
+import { createTicketsService, type TicketsService } from "./service.ts";
 
 const NOW = new Date("2026-10-30T10:00:00-03:00");
 const ANA = "emp-ana";

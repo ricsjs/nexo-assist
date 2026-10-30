@@ -2,10 +2,10 @@ import type { TicketsService, TicketsServiceError } from "@nexo/tickets-service"
 import { Hono, type Context } from "hono";
 import { streamSSE } from "hono/streaming";
 import { z } from "zod";
-import { ModelCallError } from "../agent/run-turn.js";
-import { toTicketView } from "../agent/widgets.js";
-import { ConversationError, type ConsoleFilter, type ConversationService } from "../conversations/service.js";
-import { createAuth, type AuthEnv } from "./auth.js";
+import { ModelCallError } from "../agent/run-turn.ts";
+import { toTicketView } from "../agent/widgets.ts";
+import { ConversationError, type ConsoleFilter, type ConversationService } from "../conversations/service.ts";
+import { createAuth, type AuthEnv } from "./auth.ts";
 
 export interface AppDeps {
   tickets: TicketsService;

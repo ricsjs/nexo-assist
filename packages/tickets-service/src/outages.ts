@@ -1,4 +1,4 @@
-import { ServiceUnavailableError } from "./errors.js";
+import { ServiceUnavailableError } from "./errors.ts";
 
 export interface OutageOptions {
   // Chance de uma chamada derrubar o sistema (0 = nunca, 1 = sempre).

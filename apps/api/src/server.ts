@@ -1,10 +1,10 @@
 import { serve } from "@hono/node-server";
-import { createNexoAgent } from "./agent/nexo-agent.js";
-import { loadConfig } from "./config.js";
-import { createConversationService } from "./conversations/service.js";
-import { createAppDb, migrateAppDb } from "./db/client.js";
-import { createApp } from "./http/app.js";
-import { createTicketsClient } from "./services/tickets.js";
+import { createNexoAgent } from "./agent/nexo-agent.ts";
+import { loadConfig } from "./config.ts";
+import { createConversationService } from "./conversations/service.ts";
+import { createAppDb, migrateAppDb } from "./db/client.ts";
+import { createApp } from "./http/app.ts";
+import { createTicketsClient } from "./services/tickets.ts";
 
 // Ponto de entrada do api: monta as dependências em camadas e sobe o HTTP.
 const config = (() => {

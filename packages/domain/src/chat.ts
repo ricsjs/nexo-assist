@@ -1,6 +1,6 @@
-import type { ConversationStatus, HandoffReason } from "./conversation.js";
-import type { TurnTrace } from "./decision.js";
-import type { Affected, Category, Priority, Ticket, TicketType } from "./ticket.js";
+import type { ConversationStatus, HandoffReason } from "./conversation.ts";
+import type { TurnTrace } from "./decision.ts";
+import type { Affected, Category, Priority, Ticket, TicketType } from "./ticket.ts";
 
 // Contrato entre o api e a interface: o que cada tela recebe.
 

@@ -1,2 +1,2 @@
-export * as schema from "./schema.js";
-export { createDb, migrateDb, type Db } from "./client.js";
+export * as schema from "./schema.ts";
+export { createDb, migrateDb, type Db } from "./client.ts";

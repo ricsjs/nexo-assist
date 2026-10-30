@@ -1,9 +1,9 @@
 import { RequestContext } from "@mastra/core/request-context";
 import type { TraceStep, TurnTrace, Widget } from "@nexo/domain";
-import { MAX_STEPS_PER_MESSAGE, type NexoAgent } from "./nexo-agent.js";
-import type { AgentSession, NexoRequestContext } from "./session.js";
-import { describeToolCall } from "./trace.js";
-import { selectWidgets } from "./widgets.js";
+import { MAX_STEPS_PER_MESSAGE, type NexoAgent } from "./nexo-agent.ts";
+import type { AgentSession, NexoRequestContext } from "./session.ts";
+import { describeToolCall } from "./trace.ts";
+import { selectWidgets } from "./widgets.ts";
 
 type StreamOutput = Awaited<ReturnType<NexoAgent["stream"]>>;
 type ResponseMessage = NonNullable<Awaited<StreamOutput["response"]>["messages"]>[number];

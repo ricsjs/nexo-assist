@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { ServiceUnavailableError } from "./errors.js";
-import { withSimulatedOutages } from "./outages.js";
+import { ServiceUnavailableError } from "./errors.ts";
+import { withSimulatedOutages } from "./outages.ts";
 
 const fake = { ping: async (x: number) => x * 2 };
 

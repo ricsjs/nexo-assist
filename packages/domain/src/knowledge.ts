@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Category } from "./ticket.js";
+import { Category } from "./ticket.ts";
 
 // Artigo da central de ajuda.
 export const KbArticle = z.object({

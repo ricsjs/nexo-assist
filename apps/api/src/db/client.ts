@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@libsql/client";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
-import * as schema from "./schema.js";
+import * as schema from "./schema.ts";
 
 const appRoot = fileURLToPath(new URL("../../", import.meta.url));
 

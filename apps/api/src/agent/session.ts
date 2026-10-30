@@ -1,5 +1,5 @@
 import type { Decision, Employee, HandoffReason, SupportTeam, TicketDraft } from "@nexo/domain";
-import type { WidgetCandidate } from "./widgets.js";
+import type { WidgetCandidate } from "./widgets.ts";
 
 // Ação que o agent preparou e que só roda depois que o funcionário confirmar (Anexo A, "Abertura").
 export type PendingAction =

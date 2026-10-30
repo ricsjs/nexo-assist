@@ -1,6 +1,6 @@
 import { ConversationStatus, type TurnTrace, type Widget } from "@nexo/domain";
 import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import type { Handoff, PendingAction } from "../agent/session.js";
+import type { Handoff, PendingAction } from "../agent/session.ts";
 
 // Banco do api: conversas e o estado de cada uma (com o agent ou com um analista).
 // Separado do banco de chamados, que pertence ao tickets-service.
