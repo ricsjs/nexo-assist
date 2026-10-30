@@ -6,3 +6,5 @@ dist/
 .env.local
 *.db
 *.db-journal
+.next/
+next-env.d.ts

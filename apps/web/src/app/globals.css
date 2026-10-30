@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* Cores e fontes do protótipo (Anexo C). */
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, serif;
+
+  --color-ink: #1b2330;
+  --color-ink-soft: #2a3341;
+  --color-muted: #6b7280;
+  --color-line: #e5e7eb;
+  --color-canvas: #f4f6f9;
+  --color-brand: #0b63c5;
+  --color-brand-dark: #0950a0;
+  --color-brand-soft: #e8f1fc;
+  --color-ok: #15a34a;
+  --color-ok-soft: #e7f6ec;
+  --color-warn: #d97706;
+  --color-warn-soft: #fdf3e2;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fdecec;
+  --color-info: #2563eb;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: white;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Cursor piscando enquanto o agent escreve. */
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+.typing-caret::after {
+  content: "▍";
+  margin-left: 1px;
+  animation: caret 1s steps(1) infinite;
+  color: var(--color-muted);
+}
