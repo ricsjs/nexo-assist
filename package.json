@@ -8,7 +8,8 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "db:seed": "pnpm --filter @nexo/tickets-service db:seed"
+    "db:seed": "pnpm --filter @nexo/tickets-service db:seed",
+    "chat": "pnpm --filter @nexo/api chat"
   },
   "devDependencies": {
     "typescript": "^5.9.0"

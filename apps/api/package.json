@@ -4,14 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "chat": "tsx scripts/chat.ts",
+    "demo:outages": "tsx scripts/outage-demo.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
+    "@mastra/core": "^1.80.0",
     "@nexo/domain": "workspace:*",
-    "@nexo/tickets-service": "workspace:*"
+    "@nexo/tickets-service": "workspace:*",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",
