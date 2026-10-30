@@ -5,7 +5,7 @@ Agent de atendimento do service desk de TI da Nexo. O funcionário descreve o pr
 Desafio técnico do processo seletivo da Beyond the Bytes.
 
 - **Stack:** TypeScript estrito · Mastra · Next.js · Hono · SQLite (Drizzle) · Vitest
-- **Deploy:** _(link aqui quando publicado — ver [Deploy](#deploy))_
+- **Deploy:** https://nexo-assist-adm2.onrender.com (plano gratuito: a primeira abertura depois de um tempo parado leva ~1 min — ver [Deploy](#deploy))
 - **Acesso de demonstração** (qualquer senha):
   - Funcionária: `ana.souza@nexo.com.br` (tem um chamado vencido, um reabrível e outros abertos)
   - Analista: `rafael.lima@nexo.com.br` (Suporte N2) · `juliana.costa@nexo.com.br` (Suporte N1)
