@@ -31,7 +31,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 export const Priority = z.enum(["critical", "high", "medium", "low"]);
 export type Priority = z.infer<typeof Priority>;
 
-// Prazo de cada prioridade (Anexo A). O cálculo em horas/dias úteis fica no passo 3.
+// Prazo de cada prioridade (Anexo A).
 export type SlaUnit = "hours" | "business_hours" | "business_days";
 
 export interface PriorityRule {
